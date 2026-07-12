@@ -1,0 +1,85 @@
+<!--
+  ~ Based on intellij-streamdeck-plugin, Copyright JetBrains s.r.o. and contributors.
+  ~ Modified by Bits, LLC. Use of this source code is governed by the Apache 2.0 license.
+  -->
+
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin require-restart="true">
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>io.klikor.bridge</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Klikor IDE Bridge</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://klikor.io">Bits, LLC</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[<h1>Klikor IDE Bridge</h1>
+Lets you control this IDE directly from the <a href="https://klikor.io">Klikor</a> desktop app: run/debug
+configurations, step commands, and any other IDE action, triggered from Klikor buttons and macros.<br><br>
+Zero-config: install this plugin, point a Klikor button at the action ID you want (use <b>Help | Open Action
+Browser</b> to find and copy IDs, including third-party plugins' actions), and it works.<br><br>
+Klikor IDE Bridge is a rebrand of JetBrains' open-source
+<a href="https://github.com/JetBrains/intellij-streamdeck-plugin">intellij-streamdeck-plugin</a> (originally built
+as the backend for the Elgato Stream Deck IntelliJ integration), licensed under Apache-2.0. It speaks the same
+local HTTP action-execution protocol, so it is a drop-in replacement if you were previously using the JetBrains
+Stream Deck plugin with Klikor.<br><br>
+Note: this plugin doesn't support Gateway/JetBrains Client so far.
+  ]]></description>
+
+    <change-notes><![CDATA[
+    1.2.0<br>
+    - Supports IntelliJ Platform 2026.2 and newer (sinceBuild 262), tracking upstream's fix for IDE 2026.2+
+      compatibility (ActionTreeGroupUtil keymap API). Install this version if your IDE is 2026.2 or later;
+      Klikor IDE Bridge 1.1.0 remains available for IDEs 2025.2-2026.1, and 1.0.0 for IDEs 2024.3-2025.1.<br>
+    1.1.0<br>
+    - Supports IntelliJ Platform 2025.2 through 2026.1 (sinceBuild 252, untilBuild 261.*), tracking upstream's
+      fix for IDE 2025.2+ compatibility. Install this version if your IDE is 2025.2-2026.1; Klikor IDE Bridge
+      1.0.0 remains available for IDEs 2024.3-2025.1, and 1.2.0 for IDEs 2026.2 and newer.<br>
+    1.0.0<br>
+    - Initial Klikor IDE Bridge release, forked from JetBrains' intellij-streamdeck-plugin (Apache-2.0).<br>
+    - Same local/remote action-execution HTTP protocol as the upstream plugin (drop-in compatible with Klikor).<br>
+    - "Perform action only when IDE window is focused" now defaults OFF, since Klikor buttons are expected to
+      trigger IDE actions without stealing focus.<br>
+  ]]></change-notes>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <actions>
+        <action id="streamdeck.show.action.browser"
+                class="com.jetbrains.ide.streamdeck.action.OpenActionBrowserSettingsAction" text="Open Action Browser"
+                description="Open Action Browser to view and copy action id infos">
+            <add-to-group group-id="HelpMenu" anchor="last"/>
+        </action>
+    </actions>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationInitializedListener implementation="com.jetbrains.ide.streamdeck.BackendServiceLoader" />
+        <applicationConfigurable id="streamdeck.settings"
+                                 groupId="tools"
+                                 displayName="Klikor IDE Bridge"
+                                 instance="com.jetbrains.ide.streamdeck.settings.ActionServerConfigurable"/>
+        <!-- Legacy  -->
+        <!--        <applicationConfigurable groupId="streamdeck.settings" groupWeight="131" instance="com.jetbrains.ide.streamdeck.customization.CustomizationConfigurable"-->
+        <!--                                 id="streamdeck.actionid.browser"-->
+        <!--                                 displayName="Action Id Browser"/>-->
+
+
+        <!-- Action Browser -->
+        <applicationConfigurable groupId="streamdeck.settings" groupWeight="65"
+                                 instance="com.jetbrains.ide.streamdeck.keymap.KeymapPanel"
+                                 id="streamdeck.action.browser" displayName="Action Id Browser"/>
+
+        <applicationService serviceImplementation="com.jetbrains.ide.streamdeck.settings.ActionServerSettings"/>
+        <httpRequestHandler implementation="com.jetbrains.ide.streamdeck.service.StreamDeckHttpService"/>
+    </extensions>
+
+</idea-plugin>

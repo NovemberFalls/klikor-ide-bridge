@@ -1,0 +1,49 @@
+Based on intellij-streamdeck-plugin, Copyright JetBrains s.r.o., licensed under Apache-2.0. Modified by Bits, LLC.
+
+Upstream project: https://github.com/JetBrains/intellij-streamdeck-plugin
+
+Klikor IDE Bridge ships a three-version marketplace ladder, mirroring upstream's own release channels
+(upstream verifier surfaced that upstream main HEAD references `ActionTreeGroupUtil`, a class that only
+exists on IntelliJ Platform 262/2026.2 -- see per-version notes below):
+
+Klikor IDE Bridge 1.0.0 was forked from commit db611224b3dce5a111cc8051e550fefa7ea7125e ("Release 2025.1
+version", the last state of the idea-plugin module that declared sinceBuild = 243), idea-plugin/
+subdirectory only. It is published on the JetBrains Marketplace capped to build range 243-251.*.
+
+Klikor IDE Bridge 1.1.0 is built from upstream commit 9005402dd78415b99f45e5220c0cbaef075b063a ("Update
+plugin to support 2026.1 and upgrade dependencies", 2026-03-26) -- upstream's own "2026.1" Marketplace
+release commit (pluginVersion = 2026.1, pluginSinceBuild = 252 there). This predates upstream's
+platform-262 compatibility fix (`git log -S ActionTreeGroupUtil` pins that reference to commit 5af9d10,
+2026-05-14, well after 9005402), so this build's ActionsTree.java does not reference the 262-only API.
+It declares sinceBuild = 252, untilBuild = 261.* (capped -- see idea-plugin/gradle.properties for why)
+and is published as the second Marketplace release channel, so 243-251.* IDEs resolve to 1.0.0, 252-261.*
+IDEs resolve to 1.1.0, and 262+ IDEs resolve to 1.2.0.
+
+Klikor IDE Bridge 1.2.0 re-syncs the idea-plugin/ subdirectory to upstream main at commit
+9487e193c331cd9b53e7d504f85c446c769bc0ff ("add claude code action", 2026-05-29), which carries upstream's
+platform-262 compatibility fix (ActionTreeGroupUtil). It declares sinceBuild = 262 (no until-build) and
+is published as the third Marketplace release channel, so 262+ IDEs resolve to 1.2.0.
+
+All three versions carry the identical Klikor rebrand (plugin id/name/vendor/description, focus-gating
+default, and HTTP server log strings -- see the list of changed files in idea-plugin/build.gradle.kts,
+idea-plugin/gradle.properties, idea-plugin/settings.gradle.kts, idea-plugin/.gitignore,
+idea-plugin/src/main/java/com/jetbrains/ide/streamdeck/RemoteActionServer.java,
+idea-plugin/src/main/java/com/jetbrains/ide/streamdeck/service/StreamDeckHttpService.kt,
+idea-plugin/src/main/java/com/jetbrains/ide/streamdeck/settings/ActionServerConfigurable.java,
+idea-plugin/src/main/java/com/jetbrains/ide/streamdeck/settings/ActionServerSettings.kt,
+idea-plugin/src/main/java/com/jetbrains/ide/streamdeck/settings/StreamDeckPreferenceComponent.java,
+idea-plugin/src/main/resources/META-INF/plugin.xml,
+idea-plugin/src/main/resources/META-INF/pluginIcon.svg,
+idea-plugin/src/main/resources/META-INF/pluginIcon_dark.svg -- applied identically at each version's
+upstream base commit). The repo tree at any given time carries the source for ONE version (currently
+1.2.0, the main-HEAD-based state); the 1.1.0 build is not checked into this repo as a second source tree
+(see dist/ below) but is fully reproducible from the upstream base commit above plus this file list.
+
+dist/klikor-ide-bridge-1.1.0.zip is the built 1.1.0 plugin artifact, kept here for release/upload
+convenience since its source (upstream commit 9005402) isn't checked into this working tree. Rebuild it
+by checking out 9005402's idea-plugin/ subdirectory, applying the file list above from this tree's git
+history (or from a 1.1.0 tag once one exists), setting pluginVersion=1.1.0 / pluginSinceBuild=252 /
+pluginUntilBuild=261.* in gradle.properties, and running `./gradlew buildPlugin` with a JDK 21 toolchain
+(JBR 21, e.g. bundled with DataGrip 2025.3, or any JDK 21).
+
+See LICENSE.txt for the full Apache License, Version 2.0 text.
