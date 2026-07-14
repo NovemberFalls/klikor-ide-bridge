@@ -5,6 +5,7 @@
 
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel
 
@@ -19,8 +20,17 @@ group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
 // Set the JVM language level used to build the project.
+// sinceBuild = 243 (2024.3) runs on JBR 21, so emitted bytecode MUST target Java 21.
+// Toolchain 23 = newest JDK installed locally (avoids Gradle's foojay auto-provisioning,
+// which is broken in this environment); jvmTarget/release pin the output to 21.
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(23)
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    }
+}
+tasks.withType<JavaCompile>().configureEach {
+    options.release = 21
 }
 
 // Configure project's dependencies
@@ -43,10 +53,12 @@ dependencies {
         intellijIdea(providers.gradleProperty("platformVersion"), configure = { useInstaller = true})
 
         // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
-        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+        // filter{isNotEmpty} guards against an empty gradle.properties value (v2.0.0 has none): "".split(',')
+        // yields listOf("") otherwise, which would register a bogus empty-string plugin dependency.
+        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) })
 
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
-        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
+        plugins(providers.gradleProperty("platformPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) })
 
         pluginVerifier()
         zipSigner()
@@ -56,6 +68,10 @@ dependencies {
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
+    // Disable via the extension (not the task) so dependent tasks like
+    // prepareJarSearchableOptions are wired off too — see the tasks block note below.
+    buildSearchableOptions = false
+
     pluginConfiguration {
         version = providers.gradleProperty("pluginVersion")
 
@@ -107,8 +123,12 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-//            ides(providers.gradleProperty("pluginVerifierIdeVersions").get().split(","))
-                recommended()
+            // Explicit IDE versions (deterministic verify matrix) instead of recommended(), covering
+            // the open-ended sinceBuild=243 range: the oldest supported IDE and a recent/current one.
+            create(IntelliJPlatformType.IntellijIdeaUltimate, "2024.3")
+            // 2026.2 is not GA yet — the release name doesn't resolve; use the exact RC build
+            // number (same build the compile platform uses, already cached locally).
+            create(IntelliJPlatformType.IntellijIdeaUltimate, "262.4852.50")
         }
 
         failureLevel.set(
@@ -143,8 +163,7 @@ tasks {
 //        dependsOn(patchChangelog)
     }
 
-    // https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin-faq.html#how-to-disable-building-searchable-options
-    buildSearchableOptions {
-        enabled = false
-    }
+    // buildSearchableOptions is disabled via the intellijPlatform extension above —
+    // disabling the task directly leaves prepareJarSearchableOptions expecting a
+    // directory that never gets created after a clean.
 }

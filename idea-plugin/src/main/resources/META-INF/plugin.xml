@@ -1,10 +1,12 @@
 <!--
-  ~ Based on intellij-streamdeck-plugin, Copyright JetBrains s.r.o. and contributors.
-  ~ Modified by Bits, LLC. Use of this source code is governed by the Apache 2.0 license.
+  ~ Klikor IDE Bridge: v2.0.0 is a ground-up rewrite on stable, public IntelliJ Platform API.
+  ~ It keeps the same local HTTP action-execution protocol as earlier versions, which were a
+  ~ rebrand of JetBrains' open-source intellij-streamdeck-plugin (Apache-2.0). See NOTICE.
+  ~ Copyright Bits, LLC. Use of this source code is governed by the Apache 2.0 license.
   -->
 
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
-<idea-plugin require-restart="true">
+<idea-plugin>
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
     <id>io.klikor.bridge</id>
 
@@ -21,17 +23,28 @@
     <description><![CDATA[<h1>Klikor IDE Bridge</h1>
 Lets you control this IDE directly from the <a href="https://klikor.io">Klikor</a> desktop app: run/debug
 configurations, step commands, and any other IDE action, triggered from Klikor buttons and macros.<br><br>
-Zero-config: install this plugin, point a Klikor button at the action ID you want (use <b>Help | Open Action
-Browser</b> to find and copy IDs, including third-party plugins' actions), and it works.<br><br>
-Klikor IDE Bridge is a rebrand of JetBrains' open-source
+Zero-config: install this plugin, point a Klikor button at the action ID you want, and it works. The Klikor
+app ships a set of curated action presets for common IDE actions, and any other IDE action id (including
+ones contributed by third-party plugins) works too.<br><br>
+Version 2.0.0 is a ground-up rewrite on stable, public IntelliJ Platform API only, keeping the exact same
+local HTTP action-execution protocol as earlier versions -- a drop-in upgrade. It installs, enables, and
+disables without an IDE restart.<br><br>
+Klikor IDE Bridge speaks the same local HTTP action-execution protocol as JetBrains' open-source
 <a href="https://github.com/JetBrains/intellij-streamdeck-plugin">intellij-streamdeck-plugin</a> (originally built
-as the backend for the Elgato Stream Deck IntelliJ integration), licensed under Apache-2.0. It speaks the same
-local HTTP action-execution protocol, so it is a drop-in replacement if you were previously using the JetBrains
-Stream Deck plugin with Klikor.<br><br>
+as the backend for the Elgato Stream Deck IntelliJ integration), licensed under Apache-2.0, from which earlier
+1.x versions of this plugin were forked.<br><br>
 Note: this plugin doesn't support Gateway/JetBrains Client so far.
   ]]></description>
 
     <change-notes><![CDATA[
+    2.0.0<br>
+    - Complete rewrite on stable, public IntelliJ Platform API only (zero internal API usage).<br>
+    - Dynamic plugin: installs, enables, and disables without an IDE restart.<br>
+    - ONE version for all IDEs 2024.3 and newer, replacing the 1.0.0/1.1.0/1.2.0 build-range ladder.<br>
+    - Serves on a dedicated localhost port (21420-21430) instead of the IDE's built-in web server; Klikor
+      2.8.1+ auto-discovers it. Legacy Klikor IDE Bridge 1.x installs still work with Klikor.<br>
+    - The in-IDE Action Browser settings page has been removed; use the Klikor desktop app's own action
+      picker/presets to find action ids instead.<br>
     1.2.0<br>
     - Supports IntelliJ Platform 2026.2 and newer (sinceBuild 262), tracking upstream's fix for IDE 2026.2+
       compatibility (ActionTreeGroupUtil keymap API). Install this version if your IDE is 2026.2 or later;
@@ -51,35 +64,20 @@ Note: this plugin doesn't support Gateway/JetBrains Client so far.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
 
-    <actions>
-        <action id="streamdeck.show.action.browser"
-                class="com.jetbrains.ide.streamdeck.action.OpenActionBrowserSettingsAction" text="Open Action Browser"
-                description="Open Action Browser to view and copy action id infos">
-            <add-to-group group-id="HelpMenu" anchor="last"/>
-        </action>
-    </actions>
-
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <applicationInitializedListener implementation="com.jetbrains.ide.streamdeck.BackendServiceLoader" />
-        <applicationConfigurable id="streamdeck.settings"
-                                 groupId="tools"
+        <applicationConfigurable groupId="tools"
+                                 id="io.klikor.bridge.settings"
                                  displayName="Klikor IDE Bridge"
-                                 instance="com.jetbrains.ide.streamdeck.settings.ActionServerConfigurable"/>
-        <!-- Legacy  -->
-        <!--        <applicationConfigurable groupId="streamdeck.settings" groupWeight="131" instance="com.jetbrains.ide.streamdeck.customization.CustomizationConfigurable"-->
-        <!--                                 id="streamdeck.actionid.browser"-->
-        <!--                                 displayName="Action Id Browser"/>-->
-
-
-        <!-- Action Browser -->
-        <applicationConfigurable groupId="streamdeck.settings" groupWeight="65"
-                                 instance="com.jetbrains.ide.streamdeck.keymap.KeymapPanel"
-                                 id="streamdeck.action.browser" displayName="Action Id Browser"/>
-
-        <applicationService serviceImplementation="com.jetbrains.ide.streamdeck.settings.ActionServerSettings"/>
-        <httpRequestHandler implementation="com.jetbrains.ide.streamdeck.service.StreamDeckHttpService"/>
+                                 instance="io.klikor.bridge.BridgeConfigurable"/>
+        <!-- Startup: covers normal launch AND dynamic install/enable (the platform runs a newly
+             loaded plugin's startup activities for already-open projects). Disable/uninstall
+             stops the server via BridgeServer's Disposable. -->
+        <postStartupActivity implementation="io.klikor.bridge.BridgeStartupActivity"/>
     </extensions>
+
+    <!-- BridgeSettings and BridgeServer are @Service(Service.Level.APP) light services; they are
+         auto-registered from the annotation and must NOT also be declared as applicationService. -->
 
 </idea-plugin>

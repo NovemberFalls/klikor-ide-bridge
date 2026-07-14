@@ -5,8 +5,9 @@ controlling your desktop, IDEs, and streaming tools from any device.
 
 Once installed in your IDE, this plugin runs a small local HTTP action server that lets
 the Klikor desktop app trigger any IDE action from a Klikor button: Run, Debug, Stop,
-Step Over / Into / Out, Resume, Pause, VCS update, Search Everywhere — or any action ID
-you find via **Help → Open Action Browser**.
+Step Over / Into / Out, Resume, Pause, VCS update, Search Everywhere — or any other IDE
+action ID, including ones contributed by third-party plugins. The Klikor desktop app ships
+curated action presets for common IDE actions, and any action id works.
 
 Works across IntelliJ-based IDEs (2024.3+): IntelliJ IDEA, WebStorm, PyCharm, Rider,
 DataGrip, GoLand, CLion, Android Studio, DataSpell.
@@ -25,36 +26,44 @@ Then in the Klikor desktop app: *Settings → Developer → JetBrains IDE → Co
 
 *Settings → Tools → Klikor IDE Bridge* in your IDE:
 
+- **Enabled** — turn the local action server on/off. Applying takes effect immediately, no
+  IDE restart required.
+- **Port** — 0 (default) auto-scans 21420-21430 for the first free port; a fixed value pins
+  that exact port.
 - **Password** (optional) — set the same value in Klikor's JetBrains card.
-- **Perform actions only when IDE window is focused** — off by default in this plugin,
-  so Klikor buttons work even while the Klikor window has focus.
-- **Remote server** (optional, off by default) — listens on port 21420 for control from
-  another machine. Leave off unless you need it.
+- **Perform actions only when IDE window is focused** — off by default, so Klikor buttons
+  work even while the Klikor window has focus.
+- **Status** — shows `Running on 127.0.0.1:<port>` or `Stopped`.
 
-## Version ladder
+## Version
 
-Klikor IDE Bridge publishes as three parallel JetBrains Marketplace release channels, mirroring
-upstream's own release history (upstream's main branch picked up a platform-262-only API partway
-through 2026 — see [NOTICE](NOTICE) for the exact commits and compatibility findings):
+**2.0.0** supports all IDEs **2024.3 and newer**, in a single Marketplace artifact — a ground-up
+rewrite on stable, public IntelliJ Platform API only (zero internal API usage). It replaces the old
+1.0.0/1.1.0/1.2.0 build-range ladder below. It's a dynamic plugin: install, enable, and disable without
+an IDE restart. It serves on a dedicated localhost port (21420-21430) rather than the IDE's built-in web
+server; Klikor 2.8.1+ auto-discovers it, and legacy 1.x installs still work with Klikor too. See
+[NOTICE](NOTICE) for the full rewrite rationale and attribution.
+
+### Legacy versions
+
+Prior to 2.0.0, Klikor IDE Bridge published as three parallel JetBrains Marketplace release channels,
+each forked directly from an upstream `intellij-streamdeck-plugin` commit (mirroring upstream's own
+release history — upstream's main branch picked up a platform-262-only API partway through 2026):
 
 | Version | Build range        | Upstream base commit                      | Toolchain |
 |---------|---------------------|--------------------------------------------|-----------|
 | 1.0.0   | 243 – 251.*         | `db61122` ("Release 2025.1 version")       | JDK 21    |
 | 1.1.0   | 252 – 261.*         | `9005402` (upstream's "2026.1" release)    | JDK 21    |
-| 1.2.0   | 262+ (open-ended)   | `9487e19` ("add claude code action", main HEAD) | JDK 25 |
+| 1.2.0   | 262 – open-ended    | `9487e19` ("add claude code action", main HEAD) | JDK 25 |
 
-This working tree carries the **1.2.0** source state (the current `idea-plugin/` subdirectory). 1.1.0's
-source is not checked into this repo as a second tree; its built artifact is kept at
-[`dist/klikor-ide-bridge-1.1.0.zip`](dist/klikor-ide-bridge-1.1.0.zip) for release/upload convenience,
-and is reproducible from its upstream base commit plus the same rebrand file list — see
-[NOTICE](NOTICE) for the exact recipe. 1.0.0's source lives in this repo's git history (see the commit
-that first added `klikor-jetbrains-plugin/`).
+1.1.0's source is not checked into this repo as a second tree; its built artifact is kept at
+[`dist/klikor-ide-bridge-1.1.0.zip`](dist/klikor-ide-bridge-1.1.0.zip) for release/upload convenience.
+1.0.0's and 1.2.0's source live in this repo's git history — see [NOTICE](NOTICE) for the exact commits
+and rebuild recipe.
 
 ## Build from source
 
-Requires JDK 21 (Klikor IDE Bridge 1.0.0 and 1.1.0, targeting IDEs 2024.3-2026.1) or JDK 25 (Klikor IDE
-Bridge 1.2.0+, targeting IDEs 2026.2 and newer — matches upstream's `jvmToolchain(25)` as of the
-platform-262 compatibility fix).
+Requires JDK 25 (matches this module's `jvmToolchain(25)`).
 
 ```
 cd idea-plugin
@@ -66,7 +75,8 @@ cd idea-plugin
 
 Apache License 2.0 — see [LICENSE.txt](LICENSE.txt).
 
-This plugin is a fork of JetBrains' open-source
-[intellij-streamdeck-plugin](https://github.com/JetBrains/intellij-streamdeck-plugin)
-(Copyright JetBrains s.r.o., Apache-2.0) with Klikor branding, a changed
-focus-gating default, and no protocol changes — see [NOTICE](NOTICE) for details.
+Klikor IDE Bridge 2.0.0 is an independent, ground-up implementation on stable, public IntelliJ Platform
+API, retaining the same local HTTP action-execution protocol as, and attribution to, JetBrains'
+open-source [intellij-streamdeck-plugin](https://github.com/JetBrains/intellij-streamdeck-plugin)
+(Copyright JetBrains s.r.o., Apache-2.0), from which earlier 1.x versions of this plugin were directly
+forked — see [NOTICE](NOTICE) for details.
